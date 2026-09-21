@@ -1,0 +1,13 @@
+# Install as the deploy user:  crontab deploy/crontab
+#
+# Ubuntu's cron ignores CRON_TZ, so these times are UTC (the droplet's default zone).
+# JST is UTC+9 with no daylight saving, so the mapping never drifts:
+#   15:10 UTC = 00:10 JST   (just after the day turns over in Japan)
+#   21:10 UTC = 06:10 JST   (catch-up runs, in case the column went up late or
+#   03:10 UTC = 12:10 JST    a run failed; they're no-ops if nothing changed)
+#
+# The build job itself works out "today" in JST, whatever the server's zone.
+10 15,21,3 * * * /srv/todays-darling/deploy/run-build.sh
+
+# Keep the log from growing forever (it's only a failure log, no column text in it).
+0 0 1 * * find /var/log/todays-darling -name 'build.log' -size +5M -exec truncate -s 0 {} \;

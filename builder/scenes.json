@@ -1,0 +1,26 @@
+{
+  "rooms": [
+    "rooms/drugstore.png",
+    "rooms/diner.png",
+    "rooms/living_room.png",
+    "rooms/hotel_lobby.png",
+    "rooms/arcade.png",
+    "rooms/library.png"
+  ],
+  "npcs": [
+    "npcs/shopkeeper.png",
+    "npcs/old_man.png",
+    "npcs/lady.png",
+    "npcs/kid.png",
+    "npcs/businessman.png",
+    "npcs/grandma.png",
+    "npcs/cook.png",
+    "npcs/hippie.png"
+  ],
+  "party": [
+    "party/hero.png",
+    "party/girl.png",
+    "party/nerd.png",
+    "party/prince.png"
+  ]
+}

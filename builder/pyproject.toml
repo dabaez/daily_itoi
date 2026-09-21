@@ -1,0 +1,17 @@
+[project]
+name = "todays-darling-builder"
+version = "0.1.0"
+description = "Daily job: scrape, translate, and paginate Itoi's column into web/today.json"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=1.7,<2",
+    "beautifulsoup4>=4.12",
+    "requests>=2.32",
+]
+
+[dependency-groups]
+# only needed for tools/make_placeholders.py
+tools = ["pillow>=10"]
+
+[tool.uv]
+package = false

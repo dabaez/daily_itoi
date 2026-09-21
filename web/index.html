@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Today's Darling</title>
+  <meta name="description" content="Shigesato Itoi's daily column, Today's Darling, translated into English and told by an EarthBound NPC. A non-commercial fan tribute.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='2' fill='%23000'/><rect x='1' y='1' width='14' height='14' rx='2' fill='none' stroke='%236f8fe0'/><text x='8' y='12' font-size='10' text-anchor='middle' fill='%23fff'>@</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <div id="viewport">
+      <div id="stage" role="button" tabindex="0" aria-label="Today's column. Click or press Space to read on.">
+        <img id="room" alt="" draggable="false">
+        <img id="npc" class="sprite" alt="" draggable="false">
+        <div id="party"></div>
+        <div id="box" class="window" hidden>
+          <div id="text" aria-live="polite"></div>
+          <div id="arrow" aria-hidden="true"></div>
+        </div>
+        <div id="talk" class="window small" hidden>&#9656; Talk</div>
+      </div>
+    </div>
+
+    <p id="hint">Click, tap, or press <kbd>Space</kbd> to read on.</p>
+
+    <footer>
+      <p id="dateline"></p>
+      <p>
+        <cite>今日のダーリン</cite> (<cite>Today's Darling</cite>) is written daily by Shigesato Itoi
+        for <a href="https://www.1101.com/" rel="noopener">ほぼ日刊イトイ新聞 (Hobonichi)</a>.
+        <a id="source" href="https://www.1101.com/m/recent/darling.html" rel="noopener">Read today's original</a>.
+      </p>
+      <p>
+        An unofficial, non-commercial fan tribute. The translation is machine-made (by an AI) and
+        unofficial. Not affiliated with Hobonichi or Nintendo. EarthBound / MOTHER is
+        &copy; Nintendo, Ape and HAL Laboratory. Only today's column is shown; nothing is archived.
+      </p>
+      <details id="original">
+        <summary>日本語の原文</summary>
+        <div id="text-ja" lang="ja"></div>
+      </details>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
