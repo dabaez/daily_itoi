@@ -1,6 +1,6 @@
 # Install as the deploy user:  crontab deploy/crontab
 #
-# Ubuntu's cron ignores CRON_TZ, so these times are UTC (the droplet's default zone).
+# Ubuntu's cron ignores CRON_TZ, so these times are UTC (the usual server default).
 # JST is UTC+9 with no daylight saving, so the mapping never drifts:
 #   15:10 UTC = 00:10 JST   (just after the day turns over in Japan)
 #   21:10 UTC = 06:10 JST   (catch-up runs, in case the column went up late or

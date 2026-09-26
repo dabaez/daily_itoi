@@ -20,7 +20,6 @@ import tempfile
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-import cloudflare
 import scene
 import scrape
 import translate
@@ -89,16 +88,13 @@ def build(out: Path, force: bool = False) -> int:
     scenes = scene.load_scenes()
     picked = scene.pick_scene(col.date, scenes)
 
-    header = f"Today's Darling, {dt.date.fromisoformat(col.date):%B} {int(col.date[8:])}. “{tr.title}”"
-    paragraphs = [header, *tr.paragraphs]
-
     data = {
         "date": col.date,
         "source_url": col.source_url,
         "title_ja": col.title,
         "title_en": tr.title,
         "text_ja": col.text_ja,
-        "paragraphs_en": paragraphs,
+        "paragraphs_en": tr.paragraphs,
         "room": picked["room"],
         "npc": picked["npc"],
         "party": picked["party"],
@@ -106,9 +102,7 @@ def build(out: Path, force: bool = False) -> int:
         "generated_at": dt.datetime.now(JST).isoformat(timespec="seconds"),
     }
     write_atomic(out, data)
-    log.info("wrote %s: %s, %d paragraphs, room=%s npc=%s", out, col.date, len(paragraphs), data["room"], data["npc"])
-
-    cloudflare.purge_today_json()
+    log.info("wrote %s: %s, %d paragraphs, room=%s npc=%s", out, col.date, len(tr.paragraphs), data["room"], data["npc"])
     return 0
 
 

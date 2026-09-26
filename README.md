@@ -13,12 +13,11 @@ builder/          daily job: scrape → translate → pick scene → today.json
   scrape.py       1101.com primary source + two "yesterday" fallbacks
   translate.py    the swappable translate() (TRANSLATOR=claude|passthrough)
   scene.py        date-seeded room/NPC picker (no repeats on consecutive days)
-  cloudflare.py   optional purge of today.json after each build
   pyproject.toml  dependencies (managed with uv; uv.lock pins them)
   scenes.json     the room / NPC / party arrays
   tools/make_placeholders.py   regenerates the placeholder art
-web/              static site served by nginx
-deploy/           nginx config, crontab, cron wrapper, env example, Cloudflare notes
+web/              static site (serve this directory with any web server)
+deploy/           cron wrapper, crontab, env example
 ```
 
 ## Run it locally
@@ -82,30 +81,23 @@ Until then it falls back to DotGothic16 from Google Fonts. The browser wraps the
 measuring whichever font is in use, then cuts it into EarthBound-style parts of at most
 three lines, so any font fits.
 
-## Deploy (DigitalOcean droplet + Cloudflare)
+## Deploy
 
-```sh
-# on the droplet, as the deploy user
-sudo mkdir -p /srv/todays-darling /var/log/todays-darling && sudo chown $USER /srv/todays-darling /var/log/todays-darling
-curl -LsSf https://astral.sh/uv/install.sh | sh     # installs uv to ~/.local/bin
-rsync -a --exclude .venv ./ droplet:/srv/todays-darling/
-cd /srv/todays-darling/builder && uv sync --frozen --no-dev
+Deploying means running the daily job on a schedule on the machine that serves `web/`.
+Each run scrapes the column, translates it and writes a fresh `web/today.json`, which the
+static site picks up.
 
-sudo cp deploy/todays-darling.env.example /etc/todays-darling.env   # fill in the key
-sudo chown $USER /etc/todays-darling.env && chmod 600 /etc/todays-darling.env
+1. Copy the repo to the server and install dependencies with
+   `cd builder && uv sync --frozen --no-dev`.
+2. Copy [deploy/todays-darling.env.example](deploy/todays-darling.env.example) to an env
+   file and fill in `ANTHROPIC_API_KEY`.
+3. Run [deploy/run-build.sh](deploy/run-build.sh) once by hand to do the first build. It
+   loads the env file, runs `build.py`, appends to a log and prevents overlapping runs.
+   `APP_DIR`, `ENV_FILE` and `LOG_FILE` override its default paths.
+4. Schedule it with cron. [deploy/crontab](deploy/crontab) runs it at 00:10, 06:10 and
+   12:10 JST.
 
-sudo apt install nginx
-sudo cp deploy/nginx.conf /etc/nginx/sites-available/todays-darling   # set server_name
-sudo ln -s ../sites-available/todays-darling /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-
-deploy/run-build.sh            # first build by hand; check /var/log/todays-darling/build.log
-crontab deploy/crontab         # 00:10, 06:10, 12:10 JST
-```
-
-The deploy user needs write access to `web/` (the job writes `web/today.json`), and
-nginx needs read access. Cloudflare setup (DNS, origin cert, cache rule for `today.json`,
-purge token) is in [deploy/cloudflare.md](deploy/cloudflare.md).
+The job needs write access to `web/`.
 
 ## Controls
 

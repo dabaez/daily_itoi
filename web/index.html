@@ -13,6 +13,11 @@
 </head>
 <body>
   <main>
+    <header id="heading">
+      <p id="dateline">Today's Darling</p>
+      <h1 id="title" hidden></h1>
+    </header>
+
     <div id="viewport">
       <div id="stage" role="button" tabindex="0" aria-label="Today's column. Click or press Space to read on.">
         <img id="room" alt="" draggable="false">
@@ -30,7 +35,6 @@
     <p id="hint">Click, tap, or press <kbd>Space</kbd> to read on.</p>
 
     <footer>
-      <p id="dateline"></p>
       <p>
         <cite>今日のダーリン</cite> (<cite>Today's Darling</cite>) is written daily by Shigesato Itoi
         for <a href="https://www.1101.com/" rel="noopener">ほぼ日刊イトイ新聞 (Hobonichi)</a>.
@@ -41,9 +45,9 @@
         unofficial. Not affiliated with Hobonichi or Nintendo. EarthBound / MOTHER is
         &copy; Nintendo, Ape and HAL Laboratory. Only today's column is shown; nothing is archived.
       </p>
-      <details id="original">
-        <summary>日本語の原文</summary>
-        <div id="text-ja" lang="ja"></div>
+      <details id="plain" hidden>
+        <summary>Read the translation as plain text</summary>
+        <div id="text-en"></div>
       </details>
     </footer>
   </main>

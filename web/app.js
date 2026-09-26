@@ -338,21 +338,27 @@
       .forEach(([src, [x, y]]) => party.appendChild(sprite(src, x, y)));
   }
 
-  function renderFooter(data) {
+  function renderHeading(data) {
     const d = new Date(`${data.date}T00:00:00+09:00`);
     const pretty = d.toLocaleDateString("en-US", { timeZone: "Asia/Tokyo", weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    $("dateline").textContent = `${pretty} (JST)${data.title_en ? ` — “${data.title_en}”` : ""}`;
+    $("dateline").textContent = `Today's Darling · ${pretty}`;
+    $("title").textContent = data.title_en ? `“${data.title_en}”` : "";
+    $("title").hidden = !data.title_en;
     if (data.source_url) $("source").href = data.source_url;
-    const ja = $("text-ja");
-    ja.replaceChildren(...(data.text_ja || "").split(/\n\s*\n/).filter(Boolean).map((p) => {
+  }
+
+  // The same paragraphs as the dialogue, for reading straight through.
+  function renderPlain(paras) {
+    $("text-en").replaceChildren(...paras.map((p) => {
       const el = document.createElement("p");
       el.textContent = p;
       return el;
     }));
-    $("original").hidden = !data.text_ja;
+    $("plain").hidden = false;
   }
 
-  // today.json files written before paragraphs_en existed carry pre-wrapped pages instead.
+  // today.json files written before paragraphs_en existed carry pre-wrapped pages instead,
+  // led by a "Today's Darling, <date>. “<title>”" header that the page now shows itself.
   function paragraphsFromPages(pages) {
     const paras = [];
     for (const line of pages.join("\n").split("\n")) {
@@ -364,13 +370,13 @@
         paras[last] += (/\w-$/.test(paras[last]) ? "" : " ") + text;
       }
     }
-    return paras;
+    if (/^Today's Darling, /.test(paras[0] || "")) paras.shift();
+    return paras.map((p) => p.replace(/^[◆◇]\s*/, ""));
   }
 
   function fail() {
     // No today.json (or a broken one): keep the page useful instead of blank.
     $("room").removeAttribute("src");
-    $("original").hidden = true;
     start(["...Huh? The column seems to be taking a nap.", "Please come back a little later."]);
   }
 
@@ -398,7 +404,8 @@
         : Array.isArray(data.pages_en) ? paragraphsFromPages(data.pages_en) : [];
       if (!paras.length) throw new Error("today.json has no text");
       renderScene(data);
-      renderFooter(data);
+      renderHeading(data);
+      renderPlain(paras);
       return start(paras);
     })
     .catch((err) => {

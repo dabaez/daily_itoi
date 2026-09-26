@@ -37,7 +37,8 @@ his run-on rhythm rather than chopping everything into short sentences.
 Details:
 - The first line you receive is the column's title; the rest is the body.
 - Keep the paragraph structure: one English paragraph per Japanese paragraph.
-- Paragraphs starting with ・ are Itoi's normal bullet; drop the ・ itself.
+- Paragraphs starting with ・ are Itoi's normal bullet; drop the ・ itself. Drop \
+the ◆ that marks some paragraphs (such as the daily question) the same way.
 - Keep proper nouns recognisable (e.g. "Hobonichi" for ほぼ日). Translate the \
 text inside 「」 and use ordinary double quotes.
 - Render ‥‥ as an ellipsis.
@@ -98,8 +99,12 @@ def _translate_passthrough(title_ja: str, body_ja: str) -> Translation:
     return Translation(title=title_ja, paragraphs=body_ja.split("\n\n"), engine="passthrough")
 
 
+# The box puts its own bullet in front of every paragraph, so Itoi's markers go.
+LEAD_MARKS = "・◆◇●■□★☆"
+
+
 def _split(text: str, engine: str) -> Translation:
-    blocks = [" ".join(b.split()) for b in text.replace("\r", "").split("\n\n")]
+    blocks = [" ".join(b.split()).lstrip(LEAD_MARKS + " ") for b in text.replace("\r", "").split("\n\n")]
     blocks = [b for b in blocks if b]
     if len(blocks) < 2:
         raise TranslationError(f"unexpected translation shape ({len(blocks)} block(s))")
