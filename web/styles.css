@@ -93,15 +93,24 @@ main {
   left: 16px;
   top: 12px;
   width: 224px;
-  padding: 6px 8px 9px;
+  padding: 6px 8px 8px;
 }
 
-/* A three-line window onto a strip of lines that app.js scrolls up, one line at a time. */
+/* A three-line window onto a strip of lines that app.js scrolls up, one line at a time.
+   Glyphs fill each 13px line from about 1.5px down to its very bottom, so a window edge
+   on the line boundary lets the tails of the line that just scrolled off peek in when
+   the stage is scaled by a fraction. The window sits 1px lower than the text (inside
+   the empty band at the top of each line); #box gives that 1px back at the bottom. */
 #text {
   height: 39px; /* 3 lines */
+  margin-top: 1px;
   overflow: hidden;
 }
-#strip { will-change: transform; }
+#strip {
+  position: relative;
+  top: -1px;
+  will-change: transform;
+}
 .line {
   height: 13px;
   white-space: pre;
