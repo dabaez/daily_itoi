@@ -8,12 +8,11 @@ This is a non-commercial fan tribute. It shows only today's column and keeps no 
 See [SPEC.md](SPEC.md) for the design.
 
 ```
-builder/          daily job: scrape → translate → pick scene → paginate → today.json
+builder/          daily job: scrape → translate → pick scene → today.json
   build.py        entry point (run this from cron)
   scrape.py       1101.com primary source + two "yesterday" fallbacks
   translate.py    the swappable translate() (TRANSLATOR=claude|passthrough)
   scene.py        date-seeded room/NPC picker (no repeats on consecutive days)
-  paginate.py     wraps text into 32-column, 4-line text-box pages
   cloudflare.py   optional purge of today.json after each build
   pyproject.toml  dependencies (managed with uv; uv.lock pins them)
   scenes.json     the room / NPC / party arrays
@@ -79,8 +78,9 @@ drawn front to back.
 
 Put a community recreation of the EarthBound/MOTHER font in `web/fonts/` as
 `mother.woff2`, `mother.woff` or `mother.ttf` and the site uses it automatically.
-Until then it falls back to DotGothic16 from Google Fonts. Pages are pre-wrapped to 32
-columns, and the frontend shrinks the font if a line would overflow, so any font fits.
+Until then it falls back to DotGothic16 from Google Fonts. The browser wraps the text by
+measuring whichever font is in use, then cuts it into EarthBound-style parts of at most
+three lines, so any font fits.
 
 ## Deploy (DigitalOcean droplet + Cloudflare)
 

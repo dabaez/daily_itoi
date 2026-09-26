@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Daily job: scrape -> translate -> pick scene -> paginate -> write today.json.
+"""Daily job: scrape -> translate -> pick scene -> write today.json.
 
 Safe to run several times a day. It skips translation when the column hasn't changed,
 and on any failure it leaves the existing today.json alone so the site keeps showing
@@ -21,7 +21,6 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import cloudflare
-import paginate
 import scene
 import scrape
 import translate
@@ -91,7 +90,7 @@ def build(out: Path, force: bool = False) -> int:
     picked = scene.pick_scene(col.date, scenes)
 
     header = f"Today's Darling, {dt.date.fromisoformat(col.date):%B} {int(col.date[8:])}. “{tr.title}”"
-    pages = paginate.paginate([header, *tr.paragraphs])
+    paragraphs = [header, *tr.paragraphs]
 
     data = {
         "date": col.date,
@@ -99,8 +98,7 @@ def build(out: Path, force: bool = False) -> int:
         "title_ja": col.title,
         "title_en": tr.title,
         "text_ja": col.text_ja,
-        "pages_en": pages,
-        "box": {"cols": paginate.COLS, "lines": paginate.LINES},
+        "paragraphs_en": paragraphs,
         "room": picked["room"],
         "npc": picked["npc"],
         "party": picked["party"],
@@ -108,7 +106,7 @@ def build(out: Path, force: bool = False) -> int:
         "generated_at": dt.datetime.now(JST).isoformat(timespec="seconds"),
     }
     write_atomic(out, data)
-    log.info("wrote %s: %s, %d pages, room=%s npc=%s", out, col.date, len(pages), data["room"], data["npc"])
+    log.info("wrote %s: %s, %d paragraphs, room=%s npc=%s", out, col.date, len(paragraphs), data["room"], data["npc"])
 
     cloudflare.purge_today_json()
     return 0

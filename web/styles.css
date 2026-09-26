@@ -94,16 +94,30 @@ main {
   top: 12px;
   width: 224px;
   padding: 6px 8px 9px;
-  /* height is set from the page size in today.json */
 }
 
+/* A three-line window onto a strip of lines that app.js scrolls up, one line at a time. */
 #text {
+  height: 39px; /* 3 lines */
+  overflow: hidden;
+}
+#strip { will-change: transform; }
+.line {
+  height: 13px;
   white-space: pre;
   font-size: 12px;
   line-height: 13px;
   letter-spacing: 0;
   -webkit-font-smoothing: none;
   font-smooth: never;
+}
+
+#sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 #arrow {

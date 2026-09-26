@@ -13,7 +13,7 @@ the same scene (not randomized per visit).
 Split into two parts:
 
 - **Daily build job** — runs once per day via cron. Does all the work: scrape → translate
-  → deterministically pick room + NPC → pre-paginate text → write `today.json`.
+  → deterministically pick room + NPC → write `today.json`.
 - **Dumb static frontend** — reads `today.json` and renders/animates it. Contains **no**
   randomness and **no** scraping/translation logic.
 
@@ -58,9 +58,8 @@ Runs ~once/day. Steps:
 3. **Deterministically pick** one room and one NPC:
    - Seed the RNG with the date string (e.g. `YYYY-MM-DD` in JST) so the pick is
      reproducible and identical for all visitors.
-4. **Pre-paginate** the English text into text-box-sized pages (the column runs long).
-5. **Write `today.json`** to the web root.
-6. **Be defensive:**
+4. **Write `today.json`** to the web root, with the English text as plain paragraphs.
+5. **Be defensive:**
    - On scrape/translate failure, **keep the previous `today.json`** rather than blanking
      the site.
    - Log all failures.
@@ -72,7 +71,13 @@ Runs ~once/day. Steps:
   EarthBound text box.
 - **Text box** must reproduce the EarthBound look: blue gradient border, Mother font,
   typewriter character reveal, blinking "next" arrow.
-- **Pagination:** advance pages on click / spacebar (text is pre-paginated in the JSON).
+- **Dialogue flow, as in the game:** the box shows 3 lines. The text is cut into parts of
+  at most 3 lines (at a sentence end where possible, else a comma, else between words);
+  each part starts with a bullet and ends at the blinking arrow. Click / spacebar
+  continues, and the next part is written on the following line, the box scrolling up
+  one line at a time. Wrapping and splitting happen in the browser, measured with the
+  font actually in use (the stage is fixed-size and scaled, so screen size never changes
+  the wrap); the translation step doesn't know about the box.
 - Include a small credit/footer linking the original column and noting it's a fan tribute.
 
 ### 3.3 Assets
@@ -99,9 +104,9 @@ Runs ~once/day. Steps:
   "date": "2026-09-21",
   "source_url": "https://www.1101.com/m/recent/darling.html",
   "text_ja": "……",
-  "pages_en": [
-    "First text-box screen of translated text…",
-    "Second screen…",
+  "paragraphs_en": [
+    "Today's Darling, September 21. “Title”",
+    "First paragraph of translated text…",
     "…"
   ],
   "room": "rooms/onett_drugstore.png",
@@ -109,14 +114,15 @@ Runs ~once/day. Steps:
 }
 ```
 
-Pre-paginating (`pages_en`) in the job keeps the frontend simple.
+The job sends plain paragraphs; the frontend lays them out, because only the browser
+knows the exact width of the font it ends up using.
 
 ---
 
 ## 5. Suggested repo layout
 
 ```
-/builder        # the daily job: scrape + translate + pick + paginate + write today.json
+/builder        # the daily job: scrape + translate + pick + write today.json
 /web            # static site
   /rooms        # background images
   /npcs         # NPC sprites
