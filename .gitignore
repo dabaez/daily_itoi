@@ -4,3 +4,4 @@ __pycache__/
 web/.today.*.json
 .env
 web/today.json
+.claude/*
