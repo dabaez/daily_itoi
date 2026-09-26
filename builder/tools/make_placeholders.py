@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate original placeholder art in an EarthBound-ish style.
 
 These stand in until you drop real sprites/backgrounds into web/rooms, web/npcs and

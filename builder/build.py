@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Daily job: scrape -> translate -> pick scene -> write today.json.
 
 Safe to run several times a day. It skips translation when the column hasn't changed,

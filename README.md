@@ -28,7 +28,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 uv run build.py            # installs deps on first run, writes ../web/today.json
 uv run build.py --force    # rebuild even if the column hasn't changed
 
-cd ../web && python3 -m http.server 8000   # open http://localhost:8000
+cd ../web && uv run python -m http.server 8000   # open http://localhost:8000
 ```
 
 `TRANSLATOR=passthrough` runs the whole pipeline without an API key. The pages come out in
