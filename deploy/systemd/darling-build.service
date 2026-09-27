@@ -1,0 +1,25 @@
+# Scrapes and translates today's column into ~/published/today.json (builder/build.py).
+# Started by darling-build.timer, or now with `scripts/ship.sh build`. receive-site
+# installs both as units of the darling user on every deploy.
+#
+# Logs, as root: journalctl _SYSTEMD_USER_UNIT=darling-build.service
+
+[Unit]
+Description=darling: scrape, translate and publish today's column
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/current/app/builder
+# ANTHROPIC_API_KEY, and optionally TRANSLATOR and CLAUDE_MODEL (deploy/darling.env.example).
+EnvironmentFile=-%h/darling.env
+# uv has to be installed system-wide, in this PATH.
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+# Outside releases, so deploys and rollbacks keep today's column. Every release's
+# public/today.json links here, and the real art sits next to it in art/.
+Environment=TODAY_JSON=%h/published/today.json
+# One venv for all releases, instead of a fresh one inside each release.
+Environment=UV_PROJECT_ENVIRONMENT=%h/venv
+ExecStart=/usr/local/bin/uv run --frozen --no-dev build.py
+# Scraping and translating take a minute at most; a hung run shouldn't block the next one.
+TimeoutStartSec=15min
+Nice=10

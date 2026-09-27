@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/builder"
+    schedule:
+      interval: "weekly"
+    # Don't pick up a release until it has been public for 5 days, so a
+    # compromised or broken publish has time to be caught and yanked.
+    # Does not apply to security updates.
+    cooldown:
+      default-days: 5
+    pull-request-branch-name:
+      separator: "-"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
+    pull-request-branch-name:
+      separator: "-"

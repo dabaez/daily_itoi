@@ -1,0 +1,12 @@
+[Unit]
+Description=darling: build today's column three times a day
+
+[Timer]
+# 00:10 JST, just after the day turns over in Japan. 06:10 and 12:10 catch a column that
+# went up late or a run that failed; they're no-ops (no API call) if nothing changed.
+OnCalendar=*-*-* 00,06,12:10:00 Asia/Tokyo
+# If the droplet was off at the time, run as soon as it's back.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

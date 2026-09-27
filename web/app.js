@@ -12,8 +12,10 @@
   // fits in it, so the whole part is on screen when the arrow blinks.
   const VISIBLE_LINES = 3;
   const BULLET = "• ";
-  // Where the party stands, front to back (top-left of each 16x24 sprite).
-  const PARTY_SLOTS = [[120, 142], [108, 158], [132, 172], [120, 188]];
+  // For today.json files from before the builder placed everyone: the NPC's feet, and
+  // the party's (top-left of each 16x24 sprite), front to back.
+  const OLD_SPOT = [128, 136];
+  const OLD_PARTY_SLOTS = [[120, 142], [108, 158], [132, 172], [120, 188]];
   const CHAR_MS = 28;
   const SCROLL_MS = 80;
   const PAUSE_MS = { ".": 200, "!": 200, "?": 200, ",": 90, ";": 120, ":": 120 };
@@ -316,26 +318,39 @@
 
   // ---- scene ----
 
+  // Sprites stand on (x, y): it's the middle of their bottom edge (see .sprite).
+  function stand(img, x, y) {
+    img.style.left = `${x}px`;
+    img.style.top = `${y}px`;
+  }
+
   function sprite(src, x, y) {
     const img = new Image();
     img.className = "sprite";
     img.alt = "";
     img.draggable = false;
     img.src = src;
-    img.style.left = `${x}px`;
-    img.style.top = `${y}px`;
+    stand(img, x, y);
     return img;
   }
 
   function renderScene(data) {
     $("room").src = data.room;
     $("npc").src = data.npc;
+    stand($("npc"), ...(data.spot || OLD_SPOT));
+    const members = (data.party || []).map((m, i) => typeof m === "string"
+      ? { src: m, x: OLD_PARTY_SLOTS[i][0] + 8, y: OLD_PARTY_SLOTS[i][1] + 24 }
+      : m);
+    // Whoever is lower on screen is nearer the camera, so draw top to bottom.
     const party = $("party");
-    party.replaceChildren();
-    // Draw back to front so the leader overlaps the followers.
-    (data.party || []).slice(0, PARTY_SLOTS.length).map((src, i) => [src, PARTY_SLOTS[i]])
-      .reverse()
-      .forEach(([src, [x, y]]) => party.appendChild(sprite(src, x, y)));
+    party.replaceChildren(...members
+      .filter((m) => m.x !== undefined)
+      .sort((a, b) => a.y - b.y)
+      .map((m) => {
+        const img = sprite(m.src, m.x, m.y);
+        if (m.state) img.dataset.state = m.state;
+        return img;
+      }));
   }
 
   function renderHeading(data) {

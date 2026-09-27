@@ -1,0 +1,54 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+  # Lets a deploy be re-run by hand, e.g. after a Dependabot merge.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploys run one at a time; a newer push waits instead of cancelling one
+# that is halfway through uploading.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  # web/ has no build step, so this uploads it as is; the daily job runs
+  # separately on the droplet on its own timer, with the API key that only the
+  # droplet has (deploy/systemd/). The deploy key can do nothing but publish
+  # this site (see scripts/ship.sh).
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      # The droplet runs `uv run --frozen` from this lockfile, so a stale lock or
+      # a builder that doesn't import would only show up there, at the next run.
+      - name: Check the builder
+        working-directory: builder
+        run: |
+          uv sync --locked --no-dev
+          uv run --no-sync python -c "import build"
+
+      # DEPLOY_TARGET is darling@<droplet>. DEPLOY_KNOWN_HOSTS is the droplet's
+      # host key line, so the upload can't go to an impostor.
+      - name: Upload to the droplet
+        env:
+          DEPLOY_TARGET: ${{ secrets.DEPLOY_TARGET }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          (umask 077 && printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519)
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          scripts/ship.sh

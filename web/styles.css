@@ -1,10 +1,11 @@
-/* Drop a community recreation of the EarthBound/MOTHER font into fonts/ with one of
-   these names and it's used automatically; otherwise DotGothic16 stands in. */
+/* Drop a community recreation of the EarthBound/MOTHER font into art/fonts/ (next to the
+   real sprites, outside git) with one of these names and it's used automatically;
+   otherwise DotGothic16 stands in. */
 @font-face {
   font-family: "Mother";
-  src: url("fonts/mother.woff2") format("woff2"),
-       url("fonts/mother.woff") format("woff"),
-       url("fonts/mother.ttf") format("truetype");
+  src: url("art/fonts/mother.woff2") format("woff2"),
+       url("art/fonts/mother.woff") format("woff"),
+       url("art/fonts/mother.ttf") format("truetype");
   font-display: swap;
 }
 
@@ -76,8 +77,8 @@ main {
   image-rendering: crisp-edges;
 }
 #room { left: 0; top: 0; width: 256px; height: 224px; }
-.sprite { width: 16px; height: 24px; }
-#npc { left: 120px; top: 112px; }
+/* Sprites come in any size; app.js puts the middle of their bottom edge on the spot. */
+.sprite { transform: translate(-50%, -100%); }
 
 /* ---- EarthBound window ---- */
 

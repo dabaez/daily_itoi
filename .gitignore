@@ -5,3 +5,5 @@ web/.today.*.json
 .env
 web/today.json
 .claude/*
+web/art/
+.art-cache/

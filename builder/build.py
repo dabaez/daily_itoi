@@ -14,6 +14,7 @@ import datetime as dt
 import json
 import logging
 import os
+import random
 import sys
 import tempfile
 from pathlib import Path
@@ -57,6 +58,20 @@ def write_atomic(path: Path, data: dict) -> None:
         raise
 
 
+def load_scenes(out: Path) -> dict:
+    """The real art isn't in the repo. It lives in art/ next to today.json, with its own
+    scenes.json; without it (or if it lists a missing file) the placeholder art is used."""
+    art_scenes = out.parent / "art" / "scenes.json"
+    if art_scenes.is_file():
+        try:
+            scenes = scene.load_scenes(art_scenes, root=out.parent)
+            log.info("using scenes from %s", art_scenes)
+            return scenes
+        except Exception as e:
+            log.error("can't use %s, falling back to the placeholder art: %s", art_scenes, e)
+    return scene.load_scenes()
+
+
 def build(out: Path, force: bool = False) -> int:
     prev = load_previous(out)
     today = today_jst()
@@ -84,7 +99,7 @@ def build(out: Path, force: bool = False) -> int:
         log.error("translation failed; keeping previous today.json: %s", e)
         return 1
 
-    scenes = scene.load_scenes()
+    scenes = load_scenes(out)
     picked = scene.pick_scene(col.date, scenes)
 
     data = {
@@ -95,13 +110,29 @@ def build(out: Path, force: bool = False) -> int:
         "text_ja": col.text_ja,
         "paragraphs_en": tr.paragraphs,
         "room": picked["room"],
+        "spot": picked["spot"],
         "npc": picked["npc"],
         "party": picked["party"],
         "translator": tr.engine,
         "generated_at": dt.datetime.now(JST).isoformat(timespec="seconds"),
     }
     write_atomic(out, data)
-    log.info("wrote %s: %s, %d paragraphs, room=%s npc=%s", out, col.date, len(tr.paragraphs), data["room"], data["npc"])
+    party = " ".join(f"{p['name']}({p['state']})" for p in data["party"])
+    log.info("wrote %s: %s, %d paragraphs, room=%s npc=%s party=%s", out, col.date, len(tr.paragraphs), data["room"], data["npc"], party)
+    return 0
+
+
+def shuffle(out: Path) -> int:
+    """Give the existing today.json a random scene. No scraping, no API call."""
+    data = load_previous(out)
+    if not data:
+        log.error("no %s to shuffle; build it first", out)
+        return 1
+    picked = scene.pick_scene(data["date"], load_scenes(out), rng=random.Random())
+    data.update(room=picked["room"], spot=picked["spot"], npc=picked["npc"], party=picked["party"])
+    write_atomic(out, data)
+    party = " ".join(f"{p['name']}({p['state']})" for p in data["party"])
+    log.info("shuffled %s: room=%s npc=%s party=%s", out, data["room"], data["npc"], party)
     return 0
 
 
@@ -109,6 +140,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=Path(os.environ.get("TODAY_JSON", DEFAULT_OUT)))
     ap.add_argument("--force", action="store_true", help="rebuild even if the column is unchanged")
+    ap.add_argument("--shuffle", action="store_true",
+                    help="only give the existing today.json a random scene, to try out the art "
+                         "(the next real build puts back the date's scene)")
     args = ap.parse_args()
 
     logging.basicConfig(
@@ -117,7 +151,7 @@ def main() -> int:
         stream=sys.stderr,
     )
     try:
-        return build(args.out, force=args.force)
+        return shuffle(args.out) if args.shuffle else build(args.out, force=args.force)
     except Exception:
         log.exception("unexpected failure; previous today.json left in place")
         return 1

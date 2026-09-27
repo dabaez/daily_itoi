@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-# only needed for tools/make_placeholders.py
+# only needed for tools/make_placeholders.py and tools/cut_art.py
 tools = ["pillow>=10"]
 
 [tool.uv]

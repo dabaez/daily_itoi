@@ -70,7 +70,7 @@ def _translate_claude(title_ja: str, body_ja: str) -> Translation:
             raise
         raise TranslationError(
             "no Anthropic credentials: set ANTHROPIC_API_KEY (exported, or in the env file "
-            "passed to `uv run --env-file`, or /etc/todays-darling.env when run via cron)"
+            "passed to `uv run --env-file`, or ~/darling.env on the droplet)"
         ) from e
     except anthropic.AuthenticationError as e:
         raise TranslationError(f"Anthropic rejected the API key: {e.message}") from e
