@@ -93,12 +93,11 @@ Runs ~once/day. Steps:
   trivial (no code changes beyond dropping files in and extending the array).
 
 ### 3.4 Deploy
-- The site is the `darling` site on the droplet, deployed with `dabaez/droplet-infra`
-  (see README, "Deploy"). Releases upload the committed `web/` as `public/`; nothing is
-  built.
-- The build job runs as a **systemd timer** on the droplet, a few times a day at JST
+- Pushing to `main` uploads a release to a server over SSH (see README, "Deploy").
+  Releases carry the committed `web/` as is; nothing is built.
+- The build job runs as a **systemd timer** on the server, a few times a day at JST
   times, and writes `today.json` outside the releases.
-- The API key and the real EarthBound art live only on the droplet, never in the repo.
+- The API key and the real EarthBound art live only on the server, never in the repo.
 - Hosting, DNS and any CDN in front of the site are set up outside this repo.
 
 ---

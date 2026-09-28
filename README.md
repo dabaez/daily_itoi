@@ -19,7 +19,7 @@ builder/          daily job: scrape → translate → pick scene → today.json
 web/              static site (serve this directory with any web server)
   art/            the real EarthBound art and font; gitignored, never committed
 deploy/           systemd units for the daily job, env example
-scripts/ship.sh   uploads a release to the droplet
+scripts/ship.sh   uploads a release to the server
 ```
 
 ## Run it locally
@@ -126,67 +126,20 @@ three lines, so any font fits.
 
 ## Deploy
 
-The site runs on the DigitalOcean droplet as the `darling` site of
-[dabaez/droplet-infra](https://github.com/dabaez/droplet-infra) (the "static plus jobs on
-the droplet" kind in its `NEW-SITE.md`). Pushing to `main` deploys, through
-[deploy.yml](.github/workflows/deploy.yml) and [scripts/ship.sh](scripts/ship.sh).
+Pushing to `main` deploys, through [deploy.yml](.github/workflows/deploy.yml) and
+[scripts/ship.sh](scripts/ship.sh). `ship.sh` packs the committed `web/` and the repo
+into a release and uploads it over SSH to a server that serves `web/` as a static site.
+It takes `web/` from git, so a local `web/today.json` or `web/art/` never ships.
 
-```
-/srv/sites/darling/
-  darling.env           ANTHROPIC_API_KEY, 600, darling:darling (never in git or GitHub)
-  venv/                 the builder's venv, shared by every release
-  published/
-    today.json          written by the daily job
-    art/                the real art, pushed by hand with rsync (below)
-  releases/<id>/
-    public/             the committed web/, plus two links:
-      today.json -> ../../../published/today.json
-      art        -> ../../../published/art
-    app/                the repo, for the daily job and its systemd units
-  current -> releases/<id>
-```
+The daily job runs on the server, from a systemd timer
+([deploy/systemd/](deploy/systemd/)), three times a day. It writes `today.json` outside
+the releases, so deploys and rollbacks keep today's column. The API key lives only on
+the server (see [darling.env.example](deploy/darling.env.example)); CI never calls the
+API. The real art is copied to the server by hand and isn't part of a release.
 
-- **Releases** hold only committed files. `ship.sh` takes `web/` from git, so a local
-  `web/today.json` or `web/art/` never ships.
-- **The daily job** is [darling-build.service](deploy/systemd/darling-build.service),
-  started by its timer at 00:10, 06:10 and 12:10 JST. `receive-site` installs both on
-  every deploy. It runs `build.py` from the live release with `TODAY_JSON` pointing at
-  `~/published/today.json`, which is outside releases, so deploys and rollbacks keep
-  today's column. It needs uv installed system-wide in `/usr/local/bin`.
-- **The API key** is only on the droplet, in `~/darling.env` (see
-  [darling.env.example](deploy/darling.env.example)). CI never calls the API, so GitHub
-  doesn't have it.
-- **The art** is only on the droplet and your machine. It isn't part of a release, so
-  push it with your own login (the deploy key can only run `receive-site`):
-
-  ```sh
-  rsync -a --delete --chmod=D755,F644 --chown=darling:darling --rsync-path="sudo rsync" \
-    web/art/ <you>@<droplet>:/srv/sites/darling/published/art/
-  ```
-
-  No deploy is needed; the next new column uses it. Today's scene keeps the room and NPC it
-  picked, so don't delete those two files until the day turns. Otherwise, rerun the build
-  with `--force` (one API call).
-
-Day to day, from your machine (with a `darling-deploy` host in `~/.ssh/config`):
-
-```sh
-DEPLOY_TARGET=darling-deploy scripts/ship.sh            # upload a release
-DEPLOY_TARGET=darling-deploy scripts/ship.sh build      # run the daily job now
-DEPLOY_TARGET=darling-deploy scripts/ship.sh rollback   # previous release goes live
-DEPLOY_TARGET=darling-deploy scripts/ship.sh releases   # list releases, * is live
-```
-
-Logs and timers, as root on the droplet:
-
-```sh
-journalctl _SYSTEMD_USER_UNIT=darling-build.service
-systemctl --user -M darling@ list-timers
-```
-
-nginx serves `/srv/sites/darling/current/public` with no `try_files … /index.html`
-fallback. A missing `today.json` has to be a 404, so the page shows "come back later"
-instead of failing to parse HTML as JSON.
+Whatever serves the site should return a 404 for a missing `today.json` (no SPA-style
+fallback to `index.html`), so the page shows "come back later" instead of failing to
+parse HTML as JSON.
 
 ## Controls
 
@@ -199,3 +152,6 @@ from the beginning.
 *今日のダーリン* © Shigesato Itoi / Hobonichi. EarthBound / MOTHER © Nintendo, Ape Inc.
 and HAL Laboratory. This is an unofficial, non-commercial fan project, not affiliated
 with either.
+
+The code in this repo is under the [MIT License](LICENSE). That covers the code and the
+placeholder art only, not the column or anything from EarthBound.
