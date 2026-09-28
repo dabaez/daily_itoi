@@ -1,30 +1,27 @@
 #!/usr/bin/env bash
-# Publishes the site to the droplet. deploy.yml runs this, and so can you from
+# Publishes the site to the server. deploy.yml runs this, and so can you from
 # your own machine:
 #
-#   DEPLOY_TARGET=darling-deploy scripts/ship.sh           # upload a release
-#   DEPLOY_TARGET=darling-deploy scripts/ship.sh build     # run the daily job now (doesn't wait)
-#   DEPLOY_TARGET=darling-deploy scripts/ship.sh rollback  # previous release goes live
-#   DEPLOY_TARGET=darling-deploy scripts/ship.sh activate <release-id>
-#   DEPLOY_TARGET=darling-deploy scripts/ship.sh releases  # list releases, * is live
+#   DEPLOY_TARGET=<host> scripts/ship.sh           # upload a release
+#   DEPLOY_TARGET=<host> scripts/ship.sh build     # run the daily job now (doesn't wait)
+#   DEPLOY_TARGET=<host> scripts/ship.sh rollback  # previous release goes live
+#   DEPLOY_TARGET=<host> scripts/ship.sh activate <release-id>
+#   DEPLOY_TARGET=<host> scripts/ship.sh releases  # list releases, * is live
 #
-# DEPLOY_TARGET is darling@<droplet> or a Host alias from ~/.ssh/config. On
-# the droplet the key can only run receive-site (dabaez/droplet-infra).
+# DEPLOY_TARGET is user@host or a Host alias from ~/.ssh/config. The server
+# side receives these commands over SSH and handles the releases.
 #
 # web/ has no build step and loads today.json at runtime, so the daily job
-# isn't part of a deploy: it runs on the droplet on its own timer
+# isn't part of a deploy: it runs on the server on its own timer
 # (deploy/systemd/). Each release uploads:
 #
-#   public/   the committed web/, with two links to the site user's home,
-#             outside releases:
-#               today.json -> ~/published/today.json  (written by the job)
-#               art        -> ~/published/art         (the real sprites and
-#                                                     font, never in git)
-#   app/      the repo, so the timer can run builder/ and receive-site can
-#             install deploy/systemd/
+#   public/   the committed web/, with two links outside releases:
+#               today.json  (written by the job)
+#               art/        (the real sprites and font, never in git)
+#   app/      the repo, so the timer can run builder/
 set -euo pipefail
 
-TARGET="${DEPLOY_TARGET:?set DEPLOY_TARGET, e.g. darling@<droplet> or an ssh config alias}"
+TARGET="${DEPLOY_TARGET:?set DEPLOY_TARGET, e.g. user@host or an ssh config alias}"
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 remote() {

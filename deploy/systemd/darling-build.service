@@ -1,8 +1,6 @@
 # Scrapes and translates today's column into ~/published/today.json (builder/build.py).
-# Started by darling-build.timer, or now with `scripts/ship.sh build`. receive-site
-# installs both as units of the darling user on every deploy.
-#
-# Logs, as root: journalctl _SYSTEMD_USER_UNIT=darling-build.service
+# Started by darling-build.timer, or now with `scripts/ship.sh build`. Both are meant
+# to be installed as systemd user units of the site's user.
 
 [Unit]
 Description=darling: scrape, translate and publish today's column

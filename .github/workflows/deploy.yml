@@ -1,4 +1,4 @@
-name: Deploy to DigitalOcean
+name: Deploy
 
 on:
   push:
@@ -18,8 +18,8 @@ concurrency:
 
 jobs:
   # web/ has no build step, so this uploads it as is; the daily job runs
-  # separately on the droplet on its own timer, with the API key that only the
-  # droplet has (deploy/systemd/). The deploy key can do nothing but publish
+  # separately on the server on its own timer, with the API key that only the
+  # server has (deploy/systemd/). The deploy key can do nothing but publish
   # this site (see scripts/ship.sh).
   deploy:
     runs-on: ubuntu-latest
@@ -32,7 +32,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
-      # The droplet runs `uv run --frozen` from this lockfile, so a stale lock or
+      # The server runs `uv run --frozen` from this lockfile, so a stale lock or
       # a builder that doesn't import would only show up there, at the next run.
       - name: Check the builder
         working-directory: builder
@@ -40,9 +40,9 @@ jobs:
           uv sync --locked --no-dev
           uv run --no-sync python -c "import build"
 
-      # DEPLOY_TARGET is darling@<droplet>. DEPLOY_KNOWN_HOSTS is the droplet's
+      # DEPLOY_TARGET is user@host. DEPLOY_KNOWN_HOSTS is the server's
       # host key line, so the upload can't go to an impostor.
-      - name: Upload to the droplet
+      - name: Upload to the server
         env:
           DEPLOY_TARGET: ${{ secrets.DEPLOY_TARGET }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
