@@ -105,7 +105,7 @@ Picked from the date, like everything else:
 - 1 in 500 days, all four are there, as robots.
 - Otherwise 1 to 4 members (each size equally likely), joining in story order: Ness,
   Ness and Paula, then Jeff, then Poo. Each one is
-  unconscious 10% of the time: a ghost, or 1 time in 10 a diamond. If nobody is
+  unconscious 20% of the time: a ghost, or 1 time in 10 a diamond. If nobody is
   conscious, the party is picked again from scratch.
 - Conscious members walk in front, then the unconscious ones, each group in the order
   Ness, Paula, Jeff, Poo.
