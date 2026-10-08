@@ -30,7 +30,7 @@ LEAD = 18
 STEP = 16
 
 P_ROBOTS = 1 / 500
-P_UNCONSCIOUS = 0.1
+P_UNCONSCIOUS = 0.2
 P_DIAMOND = 0.1  # of those unconscious
 
 
