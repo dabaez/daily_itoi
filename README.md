@@ -63,7 +63,7 @@ later" message.
   American Spanish. English is required and Spanish is extra: if only Spanish fails,
   `today.json` goes up with English alone (exit code 1, so it shows in the log) and the
   next run translates just the Spanish. The page then shows English with a short note.
-- **Translation:** Claude Sonnet 5 with a prompt that keeps Itoi's warm, run-on voice.
+- **Translation:** Claude Sonnet 5.5 with a prompt that keeps Itoi's warm, run-on voice.
   Override the model with `CLAUDE_MODEL`. A declined or truncated translation counts as a
   failure, so the previous day stays up.
 
