@@ -1,10 +1,12 @@
-"""Daily job: scrape -> translate -> pick scene -> write today.json.
+"""Daily job: scrape -> translate (English, then Spanish) -> pick scene -> write today.json.
 
 Safe to run several times a day. It skips translation when the column hasn't changed,
 and on any failure it leaves the existing today.json alone so the site keeps showing
-the last good day.
+the last good day. English is required; Spanish is extra: if only Spanish fails, the
+English column goes up without it and the next run translates just the Spanish.
 
-Exit codes: 0 = wrote a new today.json or nothing to do, 1 = failed (old file kept).
+Exit codes: 0 = wrote a new today.json or nothing to do, 1 = something failed (the old
+file kept, or the new one written without Spanish).
 """
 
 from __future__ import annotations
@@ -72,6 +74,17 @@ def load_scenes(out: Path) -> dict:
     return scene.load_scenes()
 
 
+def add_spanish(data: dict, title_ja: str, body_ja: str) -> bool:
+    """Adds title_es and paragraphs_es to data. On failure, logs it and leaves data alone."""
+    try:
+        tr = translate.translate(title_ja, body_ja, "es")
+    except Exception as e:
+        log.error("Spanish translation failed; the page will show English only: %s", e)
+        return False
+    data.update(title_es=tr.title, paragraphs_es=tr.paragraphs)
+    return True
+
+
 def build(out: Path, force: bool = False) -> int:
     prev = load_previous(out)
     today = today_jst()
@@ -90,11 +103,18 @@ def build(out: Path, force: bool = False) -> int:
             log.info("have %s already, source only offers older %s; nothing to do", prev["date"], col.date)
             return 0
         if prev.get("date") == col.date and prev.get("text_ja") == col.text_ja:
-            log.info("column for %s unchanged; nothing to do", col.date)
+            if prev.get("paragraphs_es"):
+                log.info("column for %s unchanged; nothing to do", col.date)
+                return 0
+            log.info("column for %s unchanged but has no Spanish yet; translating that", col.date)
+            if not add_spanish(prev, col.title, col.body):
+                return 1
+            write_atomic(out, prev)
+            log.info("added Spanish to %s: %d paragraphs", out, len(prev["paragraphs_es"]))
             return 0
 
     try:
-        tr = translate.translate(col.title, col.body)
+        tr = translate.translate(col.title, col.body, "en")
     except Exception as e:
         log.error("translation failed; keeping previous today.json: %s", e)
         return 1
@@ -116,10 +136,15 @@ def build(out: Path, force: bool = False) -> int:
         "translator": tr.engine,
         "generated_at": dt.datetime.now(JST).isoformat(timespec="seconds"),
     }
+    has_es = add_spanish(data, col.title, col.body)
     write_atomic(out, data)
     party = " ".join(f"{p['name']}({p['state']})" for p in data["party"])
-    log.info("wrote %s: %s, %d paragraphs, room=%s npc=%s party=%s", out, col.date, len(tr.paragraphs), data["room"], data["npc"], party)
-    return 0
+    log.info(
+        "wrote %s: %s, %d paragraphs (Spanish: %s), room=%s npc=%s party=%s",
+        out, col.date, len(tr.paragraphs), len(data["paragraphs_es"]) if has_es else "none",
+        data["room"], data["npc"], party,
+    )
+    return 0 if has_es else 1
 
 
 def shuffle(out: Path) -> int:

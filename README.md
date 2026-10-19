@@ -1,17 +1,17 @@
 # Today's Darling, EarthBound Edition
 
 Shigesato Itoi's daily column *今日のダーリン* from [1101.com](https://www.1101.com/),
-translated into English and delivered by an NPC in an EarthBound-style text box. The
+translated into English and Spanish and delivered by an NPC in an EarthBound-style text box. The
 room and NPC change every day, and they're the same for every visitor.
 
 This is a non-commercial fan tribute. It shows only today's column and keeps no archive.
 See [SPEC.md](SPEC.md) for the design.
 
 ```
-builder/          daily job: scrape → translate → pick scene → today.json
+builder/          daily job: scrape → translate (EN, ES) → pick scene → today.json
   build.py        entry point (run by the daily timer)
   scrape.py       1101.com primary source + two "yesterday" fallbacks
-  translate.py    the swappable translate() (TRANSLATOR=claude|passthrough)
+  translate.py    the swappable translate(..., lang) (TRANSLATOR=claude|passthrough)
   scene.py        date-seeded room/NPC picker (no repeats on consecutive days)
   pyproject.toml  dependencies (managed with uv; uv.lock pins them)
   scenes.json     the room / NPC / party arrays
@@ -40,6 +40,9 @@ for trying out the art locally; the next real build puts the date's scene back.
 `TRANSLATOR=passthrough` runs the whole pipeline without an API key. The pages come out in
 Japanese, but it's handy for checking scraping and layout.
 
+Add `?lang=es` or `?lang=en` to the URL to pick a language; the toggle in the corner does
+the same and remembers the choice.
+
 `web/today.json` is generated and gitignored (the column is meant to be ephemeral, so
 it never goes into version control). Until the first build, the page shows a "come back
 later" message.
@@ -56,6 +59,10 @@ later" message.
   the site keeps showing the last good day. Details go to the log, and the exit code is 1.
 - **Atomic writes:** the file goes to a temp file first and is renamed into place, so
   visitors never get a half-written JSON.
+- **Spanish:** translated from the Japanese right after the English, in neutral Latin
+  American Spanish. English is required and Spanish is extra: if only Spanish fails,
+  `today.json` goes up with English alone (exit code 1, so it shows in the log) and the
+  next run translates just the Spanish. The page then shows English with a short note.
 - **Translation:** Claude Sonnet 5 with a prompt that keeps Itoi's warm, run-on voice.
   Override the model with `CLAUDE_MODEL`. A declined or truncated translation counts as a
   failure, so the previous day stays up.
@@ -123,6 +130,9 @@ Put a community recreation of the EarthBound/MOTHER font in `web/art/fonts/` as
 Until then it falls back to DotGothic16 from Google Fonts. The browser wraps the text by
 measuring whichever font is in use, then cuts it into EarthBound-style parts of at most
 three lines, so any font fits.
+
+The Spanish page needs `á é í ó ú ü ñ ¿ ¡` (and their capitals). If the Mother font
+lacks one, the browser borrows it from DotGothic16, which works but looks out of place.
 
 ## Deploy
 

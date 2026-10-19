@@ -1,7 +1,8 @@
-"""JA -> EN translation, behind one swappable function.
+"""JA -> EN/ES translation, behind one swappable function.
 
 Pick the engine with the TRANSLATOR env var ("claude" by default). To add an engine,
-write a function `(title_ja, body_ja) -> Translation` and register it in ENGINES.
+write a function `(title_ja, body_ja, lang) -> Translation` and register it in ENGINES.
+`lang` is one of LANGS.
 """
 
 from __future__ import annotations
@@ -24,7 +25,8 @@ class Translation:
     engine: str
 
 
-SYSTEM_PROMPT = """\
+_VOICE = {
+    "en": """\
 You translate Shigesato Itoi's daily column 今日のダーリン ("Today's Darling") from \
 Japanese into English for a small, non-commercial fan site.
 
@@ -32,27 +34,63 @@ Itoi writes like he talks: warm, casual, meandering, lots of run-on sentences, \
 little asides, gentle self-deprecation, and "boku" (ぼく) as a soft, boyish "I". \
 Keep that voice. Prefer a natural, relaxed English sentence over a literal one, \
 but don't add ideas, jokes, or explanations that aren't in the original. Keep \
-his run-on rhythm rather than chopping everything into short sentences.
+his run-on rhythm rather than chopping everything into short sentences.""",
+    "es": """\
+You translate Shigesato Itoi's daily column 今日のダーリン ("Today's Darling") from \
+Japanese into Spanish for a small, non-commercial fan site.
 
+Use neutral Latin American Spanish: "ustedes", never "vosotros", and no regional \
+slang. Itoi writes like he talks: warm, casual, meandering, lots of run-on \
+sentences, little asides, gentle self-deprecation, and "boku" (ぼく) as a soft, \
+boyish "I". Keep that voice: when he speaks to the reader, use a friendly "tú", \
+not "usted". Prefer a natural, relaxed Spanish sentence over a literal one, but \
+don't add ideas, jokes, or explanations that aren't in the original. Keep his \
+run-on rhythm rather than chopping everything into short sentences.""",
+}
+
+# Per language: how to write ほぼ日, and how to quote.
+_DETAILS = {
+    "en": (
+        'Keep proper nouns recognisable (e.g. "Hobonichi" for ほぼ日).',
+        "Translate the text inside 「」 and use ordinary double quotes.",
+    ),
+    "es": (
+        'Keep proper nouns recognisable (e.g. "Hobonichi" for ほぼ日), in their usual '
+        "romanized form.",
+        "Translate the text inside 「」 and use ordinary double quotes (\"...\"), not "
+        "«» or dashes. Use ¿ and ¡ as Spanish requires.",
+    ),
+}
+
+_RULES = """\
 Details:
 - The first line you receive is the column's title; the rest is the body.
-- Keep the paragraph structure: one English paragraph per Japanese paragraph.
+- Keep the paragraph structure: one {language} paragraph per Japanese paragraph.
 - Paragraphs starting with ・ are Itoi's normal bullet; drop the ・ itself. Drop \
 the ◆ that marks some paragraphs (such as the daily question) the same way.
-- Keep proper nouns recognisable (e.g. "Hobonichi" for ほぼ日). Translate the \
-text inside 「」 and use ordinary double quotes.
+- {names} {quotes}
 - Render ‥‥ as an ellipsis.
 - (中略) marks an omission in the mobile edition; render it as "(...)".
 
 Output format, nothing else:
-Line 1: the English title.
+Line 1: the {language} title.
 Then a blank line, then the body paragraphs separated by single blank lines.
 No preamble, no notes, no markdown."""
+
+LANGS = ("en", "es")
+_LANGUAGE = {"en": "English", "es": "Spanish"}
+
+
+def system_prompt(lang: str) -> str:
+    names, quotes = _DETAILS[lang]
+    rules = _RULES.format(language=_LANGUAGE[lang], names=names, quotes=quotes)
+    return f"{_VOICE[lang]}\n\n{rules}"
+
 
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
 
 
-def _translate_claude(title_ja: str, body_ja: str) -> Translation:
+def _translate_claude(title_ja: str, body_ja: str, lang: str) -> Translation:
     import anthropic
 
     client = anthropic.Anthropic()  # credentials from ANTHROPIC_API_KEY
@@ -61,7 +99,7 @@ def _translate_claude(title_ja: str, body_ja: str) -> Translation:
             model=MODEL,
             max_tokens=16000,
             output_config={"effort": "medium"},
-            system=SYSTEM_PROMPT,
+            system=system_prompt(lang),
             messages=[{"role": "user", "content": f"{title_ja}\n\n{body_ja}"}],
         )
     except TypeError as e:
@@ -88,13 +126,13 @@ def _translate_claude(title_ja: str, body_ja: str) -> Translation:
 
     text = "".join(b.text for b in resp.content if b.type == "text").strip()
     log.info(
-        "translated with %s (in=%s out=%s tokens)",
-        resp.model, resp.usage.input_tokens, resp.usage.output_tokens,
+        "translated into %s with %s (in=%s out=%s tokens)",
+        lang, resp.model, resp.usage.input_tokens, resp.usage.output_tokens,
     )
     return _split(text, engine=f"claude:{resp.model}")
 
 
-def _translate_passthrough(title_ja: str, body_ja: str) -> Translation:
+def _translate_passthrough(title_ja: str, body_ja: str, lang: str) -> Translation:
     """No-op engine for testing the pipeline offline: returns the Japanese untouched."""
     return Translation(title=title_ja, paragraphs=body_ja.split("\n\n"), engine="passthrough")
 
@@ -117,8 +155,10 @@ ENGINES = {
 }
 
 
-def translate(title_ja: str, body_ja: str) -> Translation:
+def translate(title_ja: str, body_ja: str, lang: str = "en") -> Translation:
+    if lang not in LANGS:
+        raise TranslationError(f"unknown language {lang!r}; choose from {LANGS}")
     name = os.environ.get("TRANSLATOR", "claude")
     if name not in ENGINES:
         raise TranslationError(f"unknown TRANSLATOR {name!r}; choose from {sorted(ENGINES)}")
-    return ENGINES[name](title_ja, body_ja)
+    return ENGINES[name](title_ja, body_ja, lang)

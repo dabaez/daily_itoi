@@ -158,6 +158,38 @@ main {
 
 /* ---- page chrome ---- */
 
+main { position: relative; }
+
+/* The language toggle, small, in the top-right corner. */
+#lang {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: flex;
+  gap: 2px;
+}
+#lang button {
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#lang button:hover { color: var(--fg); }
+#lang button[aria-pressed="true"] {
+  color: var(--fg);
+  border-color: #6f8fe0;
+}
+#lang button:focus-visible { outline: 1px solid var(--link); outline-offset: 1px; }
+/* On a narrow screen the dateline would run under the toggle. */
+@media (max-width: 520px) {
+  main { padding-top: 34px; }
+}
+
 #heading {
   max-width: 34rem;
   margin-bottom: 14px;
@@ -174,6 +206,12 @@ main {
   font-weight: normal;
   line-height: 1.4;
   color: var(--fg);
+}
+
+#note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 #hint {
@@ -200,13 +238,13 @@ footer {
 footer a { color: var(--link); }
 #plain { margin-top: 12px; text-align: left; }
 #plain summary { cursor: pointer; text-align: center; color: var(--link); }
-#text-en {
+#plain-text {
   margin-top: 12px;
   font-size: 14px;
   line-height: 1.8;
   color: var(--fg);
 }
-#text-en p { margin: 0 0 1em; }
+#plain-text p { margin: 0 0 1em; }
 
 @media (prefers-reduced-motion: reduce) {
   #arrow.on { animation: none; }
