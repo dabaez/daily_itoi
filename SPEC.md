@@ -1,7 +1,7 @@
 # SPEC.md — "Today's Darling, EarthBound Edition"
 
 A static website that displays Shigesato Itoi's daily column *今日のダーリン* ("Today's
-Darling") from 1101.com, translated into English, presented as an **EarthBound text
+Darling") from 1101.com, translated into English and Spanish, presented as an **EarthBound text
 box**: a random NPC in a random room delivering the column to the party. The random
 NPC/room is chosen **once per day, server-side**, so every visitor on a given day sees
 the same scene (not randomized per visit).
@@ -19,7 +19,7 @@ Split into two parts:
 
 Why this split:
 - Guarantees "same scene for everyone that day."
-- One translation API call per day (cheap).
+- Two translation API calls per day, one per language (cheap).
 - Trivial to serve and cache: the site is just static files.
 
 **Do not randomize the NPC/room on the frontend** — that would give each visitor a
@@ -54,11 +54,13 @@ Runs ~once/day. Steps:
      - `https://www.1101.com/darling_column/yesterday.html`
      - `https://www.1101.com/m/recent/yesterdays_darling.html`
    - Extract the column body text as clean Japanese plain text.
-2. **Translate** JA → EN via the swappable translation function.
+2. **Translate** JA → EN, then JA → ES (from the Japanese, not from the English), via the
+   swappable translation function. Spanish is neutral Latin American. If only Spanish
+   fails, write the English anyway; the next run retries just the Spanish.
 3. **Deterministically pick** one room and one NPC:
    - Seed the RNG with the date string (e.g. `YYYY-MM-DD` in JST) so the pick is
      reproducible and identical for all visitors.
-4. **Write `today.json`** to the web root, with the English text as plain paragraphs.
+4. **Write `today.json`** to the web root, with each translation as plain paragraphs.
 5. **Be defensive:**
    - On scrape/translate failure, **keep the previous `today.json`** rather than blanking
      the site.
@@ -78,7 +80,11 @@ Runs ~once/day. Steps:
   one line at a time. Wrapping and splitting happen in the browser, measured with the
   font actually in use (the stage is fixed-size and scaled, so screen size never changes
   the wrap); the translation step doesn't know about the box.
-- Show the date and the English title above the scene, not in the dialogue.
+- Show the date and the translated title above the scene, not in the dialogue.
+- A small EN · ES toggle in the top-right corner switches the column and the page's own
+  words. The language comes from `?lang=`, then the last choice (localStorage), then the
+  browser's language, then English. If today has no Spanish yet, show English with a
+  short note. "Today's Darling" stays in English in both: it's the site's name.
 - Include a small credit/footer linking the original column and noting it's a fan tribute,
   with a collapsed option to read the whole translation as plain text. The Japanese
   original isn't shown; the footer links to it.
@@ -114,6 +120,8 @@ Runs ~once/day. Steps:
     "First paragraph of translated text…",
     "…"
   ],
+  "title_es": "Título",
+  "paragraphs_es": ["…"],
   "room": "art/rooms/onett_town_sign.png",
   "spot": [128, 124],
   "npc": "art/npcs/mr_saturn.png",
@@ -159,7 +167,7 @@ README.md
 7. Add more rooms/NPCs to the arrays.
 
 ## 7. Definition of done
-- Visiting the site shows today's column in English, in an EarthBound text box, with a
+- Visiting the site shows today's column in English or Spanish, in an EarthBound text box, with a
   room + NPC that is the same for all visitors that day and different from yesterday.
 - If scraping fails on a given day, the site still shows the last good day rather than
   breaking.

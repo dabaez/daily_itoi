@@ -25,6 +25,44 @@
   const SENTENCE_END = new RegExp(`[.!?‥…][${CLOSERS}]*$`);
   const CLAUSE_END = new RegExp(`[,;:、—–][${CLOSERS}]*$`);
 
+  // The page's own words, per language. "Today's Darling" stays in English: it's the
+  // site's name. Values with markup are our own constants, never data from today.json.
+  const STRINGS = {
+    en: {
+      locale: "en-US",
+      language: "Language",
+      stage: "Today's column. Click or press Space to read on.",
+      hint: "Click, tap, or press <kbd>Space</kbd> to read on.",
+      talk: "Talk",
+      credit: `<cite>今日のダーリン</cite> (<cite>Today's Darling</cite>) is written daily by Shigesato Itoi
+        for <a href="https://www.1101.com/" rel="noopener">ほぼ日刊イトイ新聞 (Hobonichi)</a>.
+        <a id="source" href="https://www.1101.com/m/recent/darling.html" rel="noopener">Read today's original</a>.`,
+      disclaimer: `An unofficial, non-commercial fan tribute. The translation is machine-made (by an AI) and
+        unofficial. Not affiliated with Hobonichi or Nintendo. EarthBound / MOTHER is
+        &copy; Nintendo, Ape and HAL Laboratory. Only today's column is shown; nothing is archived.`,
+      plain: "Read the translation as plain text",
+      missing: "",
+      nap: ["...Huh? The column seems to be taking a nap.", "Please come back a little later."],
+    },
+    es: {
+      locale: "es-419",
+      language: "Idioma",
+      stage: "La columna de hoy. Haz clic o presiona Espacio para seguir leyendo.",
+      hint: "Haz clic, toca o presiona <kbd>Espacio</kbd> para seguir leyendo.",
+      talk: "Hablar",
+      credit: `<cite>今日のダーリン</cite> (<cite>Today's Darling</cite>) es la columna diaria de Shigesato Itoi
+        en <a href="https://www.1101.com/" rel="noopener">ほぼ日刊イトイ新聞 (Hobonichi)</a>.
+        <a id="source" href="https://www.1101.com/m/recent/darling.html" rel="noopener">Lee el original de hoy</a>.`,
+      disclaimer: `Un homenaje de fans, no oficial y sin fines de lucro. La traducción es automática (hecha por
+        una IA) y no es oficial. Sin relación con Hobonichi ni con Nintendo. EarthBound / MOTHER es
+        &copy; Nintendo, Ape y HAL Laboratory. Solo se muestra la columna de hoy; no se guarda nada.`,
+      plain: "Leer la traducción como texto",
+      missing: "La traducción al español de hoy todavía no está lista, así que aquí va en inglés.",
+      nap: ["...¿Eh? Parece que la columna está tomando una siesta.", "Vuelve un poco más tarde, por favor."],
+    },
+  };
+  const LANG_KEY = "lang";
+
   const $ = (id) => document.getElementById(id);
   const stage = $("stage");
   const box = $("box");
@@ -41,6 +79,7 @@
   let lineCount = 0; // lines written into the strip so far
   let typing = null; // {timer}
   let closed = false;
+  let run = 0; // bumped by every start(), so a slower earlier start() gives up
 
   // ---- layout ----
 
@@ -309,8 +348,11 @@
   }
 
   async function start(paras) {
+    const me = ++run;
+    stopTyping();
     const paragraphs = paras.map((p) => p.replace(/\s+/g, " ").trim()).filter(Boolean);
     await loadFonts(BULLET + paragraphs.join(" "));
+    if (me !== run) return; // the language changed while the font loaded
     parts = layout(paragraphs);
     resetBox();
     showPart(0);
@@ -353,18 +395,17 @@
       }));
   }
 
-  function renderHeading(data) {
+  function renderHeading(data, title, s) {
     const d = new Date(`${data.date}T00:00:00+09:00`);
-    const pretty = d.toLocaleDateString("en-US", { timeZone: "Asia/Tokyo", weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const pretty = d.toLocaleDateString(s.locale, { timeZone: "Asia/Tokyo", weekday: "long", year: "numeric", month: "long", day: "numeric" });
     $("dateline").textContent = `Today's Darling · ${pretty}`;
-    $("title").textContent = data.title_en ? `“${data.title_en}”` : "";
-    $("title").hidden = !data.title_en;
-    if (data.source_url) $("source").href = data.source_url;
+    $("title").textContent = title ? `“${title}”` : "";
+    $("title").hidden = !title;
   }
 
   // The same paragraphs as the dialogue, for reading straight through.
   function renderPlain(paras) {
-    $("text-en").replaceChildren(...paras.map((p) => {
+    $("plain-text").replaceChildren(...paras.map((p) => {
       const el = document.createElement("p");
       el.textContent = p;
       return el;
@@ -389,17 +430,88 @@
     return paras.map((p) => p.replace(/^[◆◇]\s*/, ""));
   }
 
+  // ---- language ----
+
+  function pickLang() {
+    const wanted = [new URLSearchParams(location.search).get("lang")];
+    try {
+      wanted.push(localStorage.getItem(LANG_KEY));
+    } catch (e) { /* storage blocked: fine */ }
+    for (const l of navigator.languages || [navigator.language]) {
+      wanted.push(l && l.toLowerCase().startsWith("es") ? "es" : "en");
+    }
+    return wanted.find((l) => l in STRINGS) || "en";
+  }
+
+  function setLang(next) {
+    lang = next;
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+    } catch (e) { /* storage blocked: fine */ }
+    const url = new URL(location.href);
+    url.searchParams.set("lang", lang);
+    history.replaceState(null, "", url);
+    render();
+  }
+
+  // The fixed words on the page, in the chosen language.
+  function renderChrome(s) {
+    document.documentElement.lang = lang;
+    $("lang").setAttribute("aria-label", s.language);
+    for (const b of $("lang").querySelectorAll("button")) {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    }
+    stage.setAttribute("aria-label", s.stage);
+    $("hint").innerHTML = s.hint;
+    $("talk-label").textContent = s.talk;
+    $("credit").innerHTML = s.credit;
+    $("disclaimer").innerHTML = s.disclaimer;
+    $("plain-label").textContent = s.plain;
+    if (data && data.source_url) $("source").href = data.source_url;
+  }
+
+  // Today's text in the chosen language, or in English if that one isn't ready.
+  function columnText() {
+    const es = lang === "es" && Array.isArray(data.paragraphs_es) && data.paragraphs_es.length;
+    if (es) return { lang: "es", title: data.title_es, paras: data.paragraphs_es };
+    const paras = Array.isArray(data.paragraphs_en) ? data.paragraphs_en
+      : Array.isArray(data.pages_en) ? paragraphsFromPages(data.pages_en) : [];
+    return { lang: "en", title: data.title_en, paras };
+  }
+
+  function render() {
+    const s = STRINGS[lang];
+    renderChrome(s);
+    if (!data) return fail();
+    const col = columnText();
+    if (!col.paras.length) return fail();
+    $("note").textContent = s.missing;
+    $("note").hidden = col.lang === lang || !s.missing;
+    box.lang = col.lang;
+    $("title").lang = col.lang;
+    $("plain-text").lang = col.lang;
+    renderHeading(data, col.title, s);
+    renderPlain(col.paras);
+    return start(col.paras);
+  }
+
   function fail() {
     // No today.json (or a broken one): keep the page useful instead of blank.
     $("room").removeAttribute("src");
-    start(["...Huh? The column seems to be taking a nap.", "Please come back a little later."]);
+    $("note").hidden = true;
+    box.lang = lang;
+    start(STRINGS[lang].nap);
   }
 
   // ---- input ----
 
   stage.addEventListener("click", advance);
+  $("lang").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (b && b.dataset.lang !== lang) setLang(b.dataset.lang);
+  });
   document.addEventListener("keydown", (e) => {
-    if (e.target.closest && e.target.closest("summary, a, input, textarea")) return;
+    if (e.target.closest && e.target.closest("summary, a, button, input, textarea")) return;
     if (e.key === " " || e.key === "Enter" || e.key === "z" || e.key === "Z") {
       e.preventDefault();
       advance();
@@ -409,22 +521,24 @@
   window.addEventListener("resize", fitStage);
   fitStage();
 
+  let lang = pickLang();
+  let data = null; // today.json, once it has loaded
+  renderChrome(STRINGS[lang]);
+
   fetch("today.json", { cache: "no-cache" })
     .then((r) => {
       if (!r.ok) throw new Error(`today.json: HTTP ${r.status}`);
       return r.json();
     })
-    .then((data) => {
-      const paras = Array.isArray(data.paragraphs_en) ? data.paragraphs_en
-        : Array.isArray(data.pages_en) ? paragraphsFromPages(data.pages_en) : [];
-      if (!paras.length) throw new Error("today.json has no text");
+    .then((json) => {
+      data = json;
+      if (!columnText().paras.length) throw new Error("today.json has no text");
       renderScene(data);
-      renderHeading(data);
-      renderPlain(paras);
-      return start(paras);
+      return render();
     })
     .catch((err) => {
       console.error(err);
-      fail();
+      data = null;
+      render();
     });
 })();
