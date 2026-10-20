@@ -66,6 +66,23 @@ ln -s ../../../published/today.json "$STAGE/public/today.json"
 ln -s ../../../published/art "$STAGE/public/art"
 git archive --prefix=app/ HEAD | tar -x -C "$STAGE"
 
-id="$(date -u +%Y%m%dT%H%M%SZ)-$(git rev-parse --short=12 HEAD)"
+rev="$(git rev-parse --short=12 HEAD)"
+
+# The server sends app.js and styles.css with a one-year "immutable" cache, so
+# Cloudflare and browsers never ask for them again. Give them new URLs on every
+# release, or the new index.html runs with the old script.
+index="$STAGE/public/index.html"
+sed -e "s|src=\"app.js\"|src=\"app.js?v=$rev\"|" \
+  -e "s|href=\"styles.css\"|href=\"styles.css?v=$rev\"|" \
+  "$index" >"$index.new"
+mv "$index.new" "$index"
+for asset in app.js styles.css; do
+  if ! grep -q "\"$asset?v=$rev\"" "$index"; then
+    echo "web/index.html no longer links $asset the way ship.sh expects; update ship.sh" >&2
+    exit 1
+  fi
+done
+
+id="$(date -u +%Y%m%dT%H%M%SZ)-$rev"
 echo "--- shipping $id to $TARGET"
 tar -czf - -C "$STAGE" public app | remote deploy "$id"

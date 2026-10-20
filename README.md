@@ -140,6 +140,9 @@ Pushing to `main` deploys, through [deploy.yml](.github/workflows/deploy.yml) an
 [scripts/ship.sh](scripts/ship.sh). `ship.sh` packs the committed `web/` and the repo
 into a release and uploads it over SSH to a server that serves `web/` as a static site.
 It takes `web/` from git, so a local `web/today.json` or `web/art/` never ships.
+It also links `app.js` and `styles.css` from `index.html` as `?v=<commit>`. The server
+caches them for a year as immutable, so without new URLs Cloudflare and browsers would
+keep running the old script with the new page.
 
 The daily job runs on the server, from a systemd timer
 ([deploy/systemd/](deploy/systemd/)), three times a day. It writes `today.json` outside
