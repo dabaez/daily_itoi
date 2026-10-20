@@ -25,8 +25,9 @@ scripts/ship.sh   uploads a release to the server
 ## Run it locally
 
 ```sh
+cp .env.example .env       # then put your API key in .env (gitignored)
 cd builder
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=sk-ant-...   # or skip this and use: uv run --env-file ../.env build.py
 uv run build.py            # installs deps on first run, writes ../web/today.json
 uv run build.py --force    # rebuild even if the column hasn't changed
 uv run build.py --shuffle  # random room, NPC and party for today.json; no scraping or API call
