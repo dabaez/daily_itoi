@@ -23,6 +23,7 @@ class Translation:
     title: str
     paragraphs: list[str]
     engine: str
+    output_tokens: int | None = None  # includes thinking; only the Claude engine sets it
 
 
 _VOICE = {
@@ -88,17 +89,20 @@ def system_prompt(lang: str) -> str:
 
 
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5-5")
+EFFORT = "medium"
 
 
-def _translate_claude(title_ja: str, body_ja: str, lang: str) -> Translation:
+def _translate_claude(
+    title_ja: str, body_ja: str, lang: str, model: str = MODEL, effort: str = EFFORT
+) -> Translation:
     import anthropic
 
     client = anthropic.Anthropic()  # credentials from ANTHROPIC_API_KEY
     try:
         resp = client.messages.create(
-            model=MODEL,
+            model=model,
             max_tokens=16000,
-            output_config={"effort": "medium"},
+            output_config={"effort": effort},
             system=system_prompt(lang),
             messages=[{"role": "user", "content": f"{title_ja}\n\n{body_ja}"}],
         )
@@ -129,7 +133,9 @@ def _translate_claude(title_ja: str, body_ja: str, lang: str) -> Translation:
         "translated into %s with %s (in=%s out=%s tokens)",
         lang, resp.model, resp.usage.input_tokens, resp.usage.output_tokens,
     )
-    return _split(text, engine=f"claude:{resp.model}")
+    tr = _split(text, engine=f"claude:{resp.model}")
+    tr.output_tokens = resp.usage.output_tokens
+    return tr
 
 
 def _translate_passthrough(title_ja: str, body_ja: str, lang: str) -> Translation:
