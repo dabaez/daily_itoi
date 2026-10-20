@@ -88,7 +88,7 @@ def system_prompt(lang: str) -> str:
     return f"{_VOICE[lang]}\n\n{rules}"
 
 
-MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5-5")
+MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
 EFFORT = "medium"
 
 
