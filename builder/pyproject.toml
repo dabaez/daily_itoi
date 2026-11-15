@@ -2,7 +2,7 @@
 name = "todays-darling-builder"
 version = "0.1.0"
 description = "Daily job: scrape and translate Itoi's column into web/today.json"
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 dependencies = [
     "anthropic>=1.7,<3",
     "beautifulsoup4>=4.12",
